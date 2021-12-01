@@ -51,12 +51,12 @@ std::unordered_set<std::string> api::functions =
     "_update_buttons", "btn", "btnp", "cursor", "camera", "circ", "circfill",
     "clip", "cls", "color", "fillp", "fget", "fset", "line", "map", "mget",
     "mset", "oval", "ovalfill", "pal", "palt", "pget", "pset", "rect", "rectfill",
-    "serial", "sget", "sset", "spr", "sspr", "music", "sfx", "time", "tline",
+    "serial", "sget", "sset", "spr", "sspr", "music", "sfx", "time", "tline","start_game","end_game",
     // Implemented in the ZEPTO-8 BIOS
     "cocreate", "coresume", "costatus", "yield", "trace", "stop",
     "count", "add", "sub", "foreach", "all", "del", "deli", "t", "dget",
     "dset", "cartdata", "load", "save", "info", "abort", "folder",
-    "resume", "reboot", "dir", "ls", "flip", "mapdraw",
+    "resume", "reboot", "dir", "ls", "flip", "mapdraw", "json"
 };
 
 } // namespace z8::pico8

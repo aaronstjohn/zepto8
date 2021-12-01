@@ -770,7 +770,7 @@ void vm::api_printh(rich_string str, opt<std::string> filename, opt<bool> overwr
 
 void vm::api_extcmd(std::string cmd)
 {
-    if (cmd == "label" || cmd == "screen" || cmd == "rec" || cmd == "video")
+    if (cmd == "label" || cmd == "screen" || cmd == "rec" || cmd == "video" )
         private_stub(lol::format("extcmd(%s)\n", cmd.c_str()));
 }
 
@@ -835,6 +835,15 @@ var<bool, int16_t> vm::api_btnp(opt<int16_t> n, int16_t p)
     for (int i = 0; i < 16; ++i)
         bits |= was_pressed(m_state.buttons[0][i]) ? 1 << i : 0;
     return bits;
+}
+
+void vm::hippo_start_game()
+{
+    private_stub("GAME STARTED");
+}
+void vm::hippo_end_game(std::string game_result)
+{
+    private_stub(lol::format("GAME FINISHED: %s",game_result.c_str()));
 }
 
 void vm::api_serial(int16_t chan, int16_t address, int16_t len)

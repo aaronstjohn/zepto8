@@ -22,14 +22,55 @@
 #include "zepto8.h"
 #include "player.h"
 #include "raccoon/vm.h"
+#include "pico8/vm.h"
+namespace z8
+{
+class headless_player
+{
+    public:
+        headless_player(std::string const& load_pth):m_input_record("")
+        {
+            m_vm.reset((z8::vm_base *)new pico8::vm());
+            m_input_record.load(load_pth);
+        }
+        void load(std::string const &name)
+        {
+            m_vm->load(name);
+        }
 
+        void run()
+        {
+            m_vm->run();
+        }
+        void tick()
+        {
+            m_input_record.start_frame();
+            for (int b=0;b<6;b++)
+            {    
+                m_vm->button(b,m_input_record.button(b));
+            }
+            m_input_record.end_frame();
+            m_vm->step(0);
+            // return !m_input_record.is_playback_complete();
+        }
+        bool is_playback_complete()
+        {
+            return m_input_record.is_playback_complete();
+        }
+        std::shared_ptr<vm_base> m_vm;
+        input_buffer m_input_record;
+    
+
+};
+}
 int main(int argc, char **argv)
 {
     lol::sys::init(argc, argv);
 
     std::optional<std::string> cart;
     lol::ivec2 win_size(144 * 4, 144 * 4);
-
+    bool playback = false;
+    bool headless_playback = false;
     lol::cli::app opts("zepto8");
     opts.set_version_flag("-V,--version", PACKAGE_VERSION);
     opts.add_option("cart", cart, "Load a cartridge")->type_name("<cart>");
@@ -43,6 +84,9 @@ int main(int argc, char **argv)
     // -preblit_scale n
     // -draw_rect x,y,w,h
     opts.add_option("-run", cart, "Load and run a cartridge")->type_name("<cart>");
+    opts.add_flag("-playback", playback, "Playback previous recorded game");
+    opts.add_flag("-headless", headless_playback, "Playback previous recorded game headless");
+    // opts.add_option("-playback",playback,"Playback previous recorded game")
     // -x filename
     // -export param_str
     // -p param_str
@@ -62,20 +106,34 @@ int main(int argc, char **argv)
 
     CLI11_PARSE(opts, argc, argv);
 
-    lol::Application app("zepto8", win_size, 60.0f);
-
-    bool is_raccoon = cart && lol::ends_with(*cart, ".rcn.json");
-
-    z8::player *player = new z8::player(false, is_raccoon);
-
-    if (cart)
+    if (headless_playback)
     {
-        player->load(*cart);
-        player->run();
+        z8::headless_player headless("input.dat");
+        headless.load(*cart);
+        headless.run();
+        while(!headless.is_playback_complete())
+            headless.tick();
     }
+    else
+    {
+        lol::Application app("zepto8", win_size, 60.0f);
 
-    app.Run();
+        bool is_raccoon = cart && lol::ends_with(*cart, ".rcn.json");
 
+        z8::player *player = new z8::player(false, is_raccoon);
+        if(playback)
+            player->load_input_recording("input.dat");
+        // new InputRecorder();
+
+        if (cart)
+        {
+            player->load(*cart);
+            player->run();
+        }
+
+        app.Run();
+    }
+    // player->save_recording("input.dat");
     return EXIT_SUCCESS;
 }
 

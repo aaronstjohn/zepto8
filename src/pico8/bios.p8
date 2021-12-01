@@ -17,6 +17,7 @@ __lua__
 --
 -- Private things
 --
+json = dofile("./lua/json.lua")
 __z8_stopped = false
 __z8_load_code = load
 __z8_persist_delay = 0

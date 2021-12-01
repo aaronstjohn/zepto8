@@ -19,6 +19,7 @@
 #include <lol/vector>    // lol::vec2
 #include <lol/transform> // lol::mat4
 #include <lol/color>     // lol::color
+#include <lol/file>      // lol::file::write
 
 #include "player.h"
 
@@ -26,11 +27,75 @@
 #include "pico8/vm.h"
 #include "pico8/pico8.h"
 #include "raccoon/vm.h"
+#include <iostream>
+#include <lol/engine-internal.h>
+#include <cassert>
 
 namespace z8
 {
+input_buffer::input_buffer(std::string const& input_save_pth):m_frame(0),m_save_path(input_save_pth){}
+input_buffer::~input_buffer()
+{
+    if(m_save_path.length()>0)
+    {
+        std::cout<<"Writing: "<<m_record_buffer.size()<<" Input frames to "<<m_save_path<<std::endl;
+        lol::file::write(m_save_path,m_record_buffer);
+    }
+}
+    
+bool input_buffer::button(int button,bool input_btn)
+{
+    // assert(frame==m_frame);
 
-player::player(bool is_embedded, bool is_raccoon)
+    //If we're recording, record the current state of this button
+    if(!m_playback_mode)
+        m_buttons[button] = !m_buttons[button]?input_btn:  m_buttons[button];
+    
+    //In playback mode, this will return the recorded button state in record mode, just returns the value of the button set above
+    return m_buttons[button];
+}
+void input_buffer::start_frame()
+{
+    //Toggles between playback mode and non playback mode to allow for recording fresh input at the end of a playback
+    if(!is_playback_complete())
+    {   m_buttons = m_playback_buffer.back();
+        
+        m_playback_mode = true;
+    }
+    else
+    {
+        m_buttons.reset();
+        m_playback_mode =false;
+    }
+}
+void input_buffer::end_frame(){
+
+    if(m_playback_mode)
+        m_playback_buffer.pop_back();
+    
+    //Records the input regardless of mode so we can continue playing after a playback is complete, might want to add some controls for this
+    //b.c. it doesn't quite meet the need atm.
+    m_record_buffer.push_back(m_buttons);
+    m_frame++;
+}
+bool input_buffer::is_playback_complete()
+{
+    return m_playback_buffer.size() == 0;
+}
+
+void input_buffer::load(std::string const& path)
+{
+    std::vector<std::bitset<16>> input;
+    lol::file::read(path,input);
+    std::cout<<"LOADED RECORDING OF: "<<input.size()<<" Frames"<<std::endl;
+    m_playback_buffer.resize(input.size());
+    std::reverse_copy(std::begin(input), std::end(input), std::begin(m_playback_buffer));
+    std::cout<<"Read: "<<m_playback_buffer.size()<<" Input frames from "<<path<<std::endl;
+    // m_input_record.
+    
+}
+
+player::player(bool is_embedded, bool is_raccoon,std::string const& input_save_pth)
   : m_input_map
     {
         { lol::input::key::SC_Left, 0 },
@@ -38,7 +103,8 @@ player::player(bool is_embedded, bool is_raccoon)
         { lol::input::key::SC_Up, 2 },
         { lol::input::key::SC_Down, 3 },
     },
-    m_embedded(is_embedded)
+    m_embedded(is_embedded),
+    m_input_record(input_save_pth)
 {
     if (is_raccoon)
     {
@@ -111,6 +177,8 @@ player::player(bool is_embedded, bool is_raccoon)
 
     /* Allocate memory */
     m_screen.resize(128 * 128);
+    // if(playback)
+    //     load_recording(m_recording_path);
 }
 
 player::~player()
@@ -126,8 +194,15 @@ player::~player()
     lol::Scene& scene = lol::Scene::GetScene();
     lol::Ticker::Unref(m_scenecam);
     scene.PopCamera(m_scenecam);
+    // if(m_input_record)
+    //     m_input_record->finalize();
+    // if(!m_playback)
+    //     save_recording(m_recording_path);
 }
-
+void player::load_input_recording(std::string const& path)
+{
+    m_input_record.load(path);
+}
 void player::load(std::string const &name)
 {
     m_vm->load(name);
@@ -175,11 +250,13 @@ void player::tick_game(float seconds)
 
     if (!m_embedded)
     {
-        // Keyboard events as buttons
+        m_input_record.start_frame();
         for (auto const &k : m_input_map)
-            m_vm->button(k.second, keyboard->key(k.first));
-
-        // Keyboard events as text
+        {    
+            m_vm->button(k.second,m_input_record.button(k.second,keyboard->key(k.first)));
+        }
+        m_input_record.end_frame();
+       // Keyboard events as text
         if (keyboard->key_pressed(lol::input::key::SC_Return))
             m_vm->text('\r');
         if (keyboard->key_pressed(lol::input::key::SC_Backspace))

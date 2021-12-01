@@ -188,6 +188,9 @@ private:
     void api_music(int16_t pattern, int16_t fade_len, int16_t mask);
     void api_sfx(int16_t sfx, opt<int16_t> in_chan, int16_t offset);
 
+    void hippo_start_game();
+    void hippo_end_game(std::string game_result);
+
     // Deprecated
     fix32 api_time();
 
@@ -256,12 +259,14 @@ public:
             { "sfx",   bind<&vm::api_sfx>() },
 
             { "time", bind<&vm::api_time>() },
-
+            
+            { "start_game", bind<&vm::hippo_start_game>() },
+            { "end_game", bind<&vm::hippo_end_game>() },
             { "__cartdata", bind<&vm::private_cartdata>() },
             { "__download", bind<&vm::private_download>() },
             { "__is_api",   bind<&vm::private_is_api>() },
             { "__load",     bind<&vm::private_load>() },
-            { "__stub",     bind<&vm::private_stub>() },
+            { "__stub",     bind<&vm::private_stub>() }
         };
     };
 

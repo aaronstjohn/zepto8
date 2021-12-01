@@ -69,3 +69,4 @@ binaries/*Release
 *.opensdf
 # ReSharper cruft
 _ReSharper.*
+input.dat
