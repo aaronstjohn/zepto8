@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "*.pl": "prolog",
+        "*.docker": "dockerfile",
+        "*.dock": "dockerfile",
+        "*.make": "makefile",
+        "file": "cpp",
+        "*.inc": "cpp",
+        "cli": "cpp"
+    }
+}
